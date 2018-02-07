@@ -1,4 +1,4 @@
-# MongoChat
+# ZodiChat
 
 Simple chat app that uses MongoDB and Socket.io
 
