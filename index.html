@@ -30,13 +30,15 @@
                     <br>
                     <div id="typing"></div>
                     <textarea id="textarea" class="form-control" placeholder="Enter message..."></textarea>
+                    <p><button id="upload_btn" hidden="true">Prompt for File</button></p>
+                    <p><label>Choose File: <input type="file" id="upload_input"/></label></p>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+    <script src="stream.js"></script>
     <script src="client.js"></script>
-
 </body>
 </html>

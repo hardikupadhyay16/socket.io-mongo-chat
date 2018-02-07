@@ -38,6 +38,37 @@
     // Connect to socket.io
     var socket = io.connect('http://192.168.31.115:4000');
 
+    document.addEventListener("DOMContentLoaded", function(){
+
+        // Initialize instances:
+//            var socket = io.connect();
+        console.log('asd');
+        var siofu = new SocketIOFileUpload(socket);
+
+        // Configure the three ways that SocketIOFileUpload can read files:
+        document.getElementById("upload_btn").addEventListener("click", siofu.prompt, false);
+        siofu.listenOnInput(document.getElementById("upload_input"));
+
+        // Do something on svr progress:
+        siofu.addEventListener("progress", function(event){
+            var percent = event.bytesLoaded / event.file.size * 100;
+            console.log("File is", percent.toFixed(2), "percent loaded");
+        });
+
+        // Do something when a file is uploaded:
+        siofu.addEventListener("complete", function(event){
+            console.log(event.success);
+            console.log(event.file.name);
+            socket.emit('input', {
+                name:username.value,
+                message:textarea.value,
+                attachment_name: event.file.name,
+                attachment_type: event.file.type,
+                room: room
+            });
+        });
+
+    }, false);
     // Check for connection
     if(socket !== undefined){
         console.log('Connected to socket...');
@@ -48,11 +79,22 @@
             if(data.length){
                 for(var x = 0;x < data.length;x++){
                     // Build out message div
+                    console.log(data[x].attachment_name, 'attachment');
+                    if (data[x].attachment_name != null){
+                        var message = document.createElement('img');
+                        message.setAttribute('class', 'chat-message');
+                        message.setAttribute('src', "svr/uploads/"+data[x].attachment_name);
+                        message.setAttribute('width', "100");
+                        messages.appendChild(message);
+                        messages.insertBefore(message, messages.firstChild);
+                        console.log(message);
+                    }
                     var message = document.createElement('div');
                     message.setAttribute('class', 'chat-message');
                     message.textContent = data[x].name+": "+data[x].message;
                     messages.appendChild(message);
                     messages.insertBefore(message, messages.firstChild);
+
                 }
             }
         });

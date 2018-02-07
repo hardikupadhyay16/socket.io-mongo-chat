@@ -1,6 +1,6 @@
 const mongo = require('mongodb').MongoClient;
 const client = require('socket.io').listen(4000);
-
+const SocketIOFileUpload = require('socketio-file-upload')
 // Connect to mongo
 mongo.connect('mongodb://0.0.0.0/mongochat', function(err, db){
     if(err){
@@ -12,6 +12,22 @@ mongo.connect('mongodb://0.0.0.0/mongochat', function(err, db){
     // Connect to Socket.io
     client.on('connection', function(socket){
         var chat = db.collection('chats');
+
+        var uploader = new SocketIOFileUpload();
+        uploader.dir = "svr/uploads";
+        uploader.listen(socket);
+
+        // Do something when a file is saved:
+        uploader.on("saved", function(event){
+            console.log('asdasdasdasd');
+            console.log(event.file);
+        });
+
+        // Error handler:
+        uploader.on("error", function(event){
+            console.log("Error from uploader", event);
+        });
+
         socket.on('join', function (data) {
             socket.join(data.room); // We are using room of socket io
             // Get chats from mongo collection
@@ -36,14 +52,17 @@ mongo.connect('mongodb://0.0.0.0/mongochat', function(err, db){
             var name = data.name;
             var message = data.message;
             var room = data.room;
+            var attachment_name = data.attachment_name;
+            var attachment_type = data.attachment_type;
             // client[receiver] = socket;
             // Check for name and message
-            if(name == '' || message == ''){
+            if(name == ''){
                 // Send error status
                 sendStatus('Please enter a name and message');
             } else {
                 // Insert message
-                chat.insertOne({name: name, message: message, room: room, created_at: new Date().getTime()}, function(){
+                chat.insertOne({name: name, message: message, room: room,
+                    created_at: new Date().getTime(), attachment_name: attachment_name, attachment_type: attachment_type}, function(){
                     console.log(room, 'room');
                     client.to(room).emit('output', [data]);
                     // Send status object
