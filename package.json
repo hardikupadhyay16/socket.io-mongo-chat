@@ -1,5 +1,5 @@
 {
-  "name": "mongochat",
+  "name": "zodichat",
   "version": "1.0.0",
   "description": "Simple chat app using sockets",
   "main": "server.js",
