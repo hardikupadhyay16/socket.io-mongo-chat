@@ -36,7 +36,7 @@
     var room = getParameterByName('room');
 
     // Connect to socket.io
-    var socket = io.connect('http://192.168.31.115:4000');
+    var socket = io.connect('34.231.52.106:4000');
 
     document.addEventListener("DOMContentLoaded", function(){
 
