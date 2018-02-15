@@ -1,99 +1,100 @@
-const mongo = require('mongodb').MongoClient;
-const client = require('socket.io').listen(4000);
-const SocketIOFileUpload = require('socketio-file-upload')
-// Connect to mongo
-mongo.connect('mongodb://0.0.0.0/mongochat', function(err, db){
-    if(err){
-        throw err;
+function resolveURL(url) {
+    var isWin = !!process.platform.match(/^win/);
+    if (!isWin) return url;
+    return url.replace(/\//g, '\\');
+}
+
+// Please use HTTPs on non-localhost domains.
+var isUseHTTPs = false;
+
+// var port = 443;
+var port = process.env.PORT || 4000;
+
+try {
+    process.argv.forEach(function(val, index, array) {
+        console.log(val);
+        if (!val) return;
+
+        if (val === '--ssl') {
+            isUseHTTPs = true;
+        }
+    });
+} catch (e) {}
+
+var fs = require('fs');
+var path = require('path');
+
+// see how to use a valid certificate:
+var options = {
+    key: fs.readFileSync(path.join(__dirname, resolveURL('keys/privatekey.pem'))),
+    cert: fs.readFileSync(path.join(__dirname, resolveURL('keys/certificate.pem')))
+};
+
+// force auto reboot on failures
+var autoRebootServerOnFailure = false;
+
+var server = require(isUseHTTPs ? 'https' : 'http');
+var url = require('url');
+var app;
+
+
+if (isUseHTTPs) {
+    app = server.createServer(options, function(){});
+} else {
+    app = server.createServer(function(){});
+}
+
+function cmd_exec(cmd, args, cb_stdout, cb_end) {
+    var spawn = require('child_process').spawn,
+        child = spawn(cmd, args),
+        me = this;
+    me.exit = 0;
+    me.stdout = "";
+    child.stdout.on('data', function(data) {
+        cb_stdout(me, data)
+    });
+    child.stdout.on('end', function() {
+        cb_end(me)
+    });
+}
+
+function runServer() {
+    app.on('error', function(e) {});
+
+    app = app.listen(port, process.env.IP || '0.0.0.0', function(error) {});
+
+    require('./signaling-server.js')(app, function(socket) {
+
+        try {
+            var params = socket.handshake.query;
+
+            if (!params.socketCustomEvent) {
+                params.socketCustomEvent = 'custom-message';
+            }
+
+            socket.on(params.socketCustomEvent, function(message) {
+                try {
+                    socket.broadcast.emit(params.socketCustomEvent, message);
+                } catch (e) {}
+            });
+        } catch (e) {}
+    });
+}
+
+if (autoRebootServerOnFailure) {
+    // auto restart app on failure
+    var cluster = require('cluster');
+    if (cluster.isMaster) {
+        cluster.fork();
+
+        cluster.on('exit', function(worker, code, signal) {
+            cluster.fork();
+        });
     }
 
-    console.log('MongoDB connected...');
-
-    // Connect to Socket.io
-    client.on('connection', function(socket){
-        var chat = db.collection('chats');
-
-        var uploader = new SocketIOFileUpload();
-        uploader.dir = "svr/uploads";
-        uploader.listen(socket);
-
-        // Do something when a file is saved:
-        uploader.on("saved", function(event){
-            console.log('asdasdasdasd');
-            console.log(event.file);
-        });
-
-        // Error handler:
-        uploader.on("error", function(event){
-            console.log("Error from uploader", event);
-        });
-
-        socket.on('join', function (data) {
-            socket.join(data.room); // We are using room of socket io
-            // Get chats from mongo collection
-            chat.find({room: data.room}).limit(100).sort({_id:1}).toArray(function(err, res){
-                if(err){
-                    throw err;
-                }
-                // Emit the messages
-                socket.emit('output', res);
-            });
-        });
-        // Create function to send status
-        sendStatus = function(s){
-            socket.emit('status', s);
-        };
-
-
-
-        // Handle input events
-        socket.on('input', function(data){
-            console.log(data, 'input');
-            var name = data.name;
-            var message = data.message;
-            var room = data.room;
-            var attachment_name = data.attachment_name;
-            var attachment_type = data.attachment_type;
-            // client[receiver] = socket;
-            // Check for name and message
-            if(name == ''){
-                // Send error status
-                sendStatus('Please enter a name and message');
-            } else {
-                // Insert message
-                chat.insertOne({name: name, message: message, room: room,
-                    created_at: new Date().getTime(), attachment_name: attachment_name, attachment_type: attachment_type}, function(){
-                    console.log(room, 'room');
-                    client.to(room).emit('output', [data]);
-                    // Send status object
-                    sendStatus({
-                        message: 'Message sent',
-                        clear: true
-                    });
-                });
-            }
-        });
-
-        // when the client emits 'typing', we broadcast it to others
-        socket.on('typing', function (data) {
-            var room = data.room;
-            if (typeof(data.name) != 'undefined'){
-                socket.message = data.name+" is typing..";
-            }else{
-                socket.message = '';
-            }
-            socket.broadcast.to(room).emit('typing', {
-                message: socket.message
-            });
-        });
-
-        // Handle clear
-        socket.on('clear', function(data){
-            // Remove all chats from collection
-            chat.deleteMany({}, function(){
-                // Emit cleared
-                socket.emit('cleared');
-            });
-        });
-    });
-});
+    if (cluster.isWorker) {
+        runServer();
+    }
+} else {
+    runServer();
+}
