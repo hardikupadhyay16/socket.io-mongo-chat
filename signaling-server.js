@@ -70,6 +70,15 @@ module.exports = exports = function(app, socketCallback) {
         };
     }
 
+    function getOnlineUser(listOfUsers) {
+        var usernames = [];
+        for (var user in listOfUsers) {
+            if (user != 'undefined'){
+                usernames.push(listOfUsers[user]['socket'].username);
+            }
+        }
+       return usernames;
+    }
     function onConnection(socket) {
         var params = socket.handshake.query;
         var socketMessageEvent = params.msgEvent || 'RTCMultiConnection-Message';
@@ -79,25 +88,26 @@ module.exports = exports = function(app, socketCallback) {
 
         if (params.enableScalableBroadcast) {
             if (!ScalableBroadcast) {
-                ScalableBroadcast = require('./Scalable-Broadcast.js');
+                ScalableBroadcast = require('./scalable-broadcast.js');
             }
             ScalableBroadcast(socket, params.maxRelayLimitPerUser);
         }
 
         // temporarily disabled
-        if (false && !!listOfUsers[params.userid]) {
+        if (!!listOfUsers[params.userid]) {
             params.dontUpdateUserId = true;
 
             var useridAlreadyTaken = params.userid;
-            params.userid = params.username; //(Math.random() * 1000).toString().replace('.', '');
+            params.userid = (Math.random() * 1000).toString().replace('.', '');
             socket.emit('userid-already-taken', useridAlreadyTaken, params.userid);
         }
 
-        socket.userid = params.username;
+        socket.userid = params.userid;
+        socket.username = params.username;
         appendUser(socket);
 
-        socket.broadcast.emit('user-connected', socket.userid);
-        socket.emit('subscribed-users', Object.keys(listOfUsers));
+        socket.broadcast.emit('user-connected', socket.username);
+        socket.emit('subscribed-users', getOnlineUser(listOfUsers));
 
         if (autoCloseEntireSession == 'false' && Object.keys(listOfUsers).length == 1) {
             socket.shiftModerationControlBeforeLeaving = true;
@@ -439,7 +449,7 @@ module.exports = exports = function(app, socketCallback) {
         });
 
         socket.on('disconnect', function() {
-            socket.broadcast.emit('user-disconnected', socket.userid);
+            socket.broadcast.emit('user-disconnected', socket.username);
             try {
                 if (socket && socket.namespace && socket.namespace.sockets) {
                     delete socket.namespace.sockets[this.id];
@@ -504,7 +514,7 @@ module.exports = exports = function(app, socketCallback) {
             socket.on('join', function (data) {
                 socket.join(data.room); // We are using room of socket io
                 // Get chats from mongo collection
-                chat.find({room: data.room, deleted_by: { $nin: [ socket.userid ] }}).sort({_id:1}).toArray(function(err, res){
+                chat.find({room: data.room, deleted_by: { $nin: [ socket.username ] }}).sort({_id:1}).toArray(function(err, res){
                     if(err){
                         throw err;
                     }
@@ -515,7 +525,7 @@ module.exports = exports = function(app, socketCallback) {
 
             socket.on('leave', function(data) {
                 socket.leave(data.room);
-                io.in(data.room).emit('user leave', {message: socket.userid + 'left' + data.room, clear: true});
+                io.in(data.room).emit('user leave', {message: socket.username + 'left' + data.room, clear: true});
             });
 
             // Create function to send status
@@ -525,7 +535,7 @@ module.exports = exports = function(app, socketCallback) {
 
             // Handle input events
             socket.on('send_message', function(data){
-                var name = socket.userid;
+                var name = socket.username;
                 var message = data.message;
                 var room = data.room;
                 var attachment_name = data.attachment_name;
@@ -552,7 +562,7 @@ module.exports = exports = function(app, socketCallback) {
             // when the client emits 'typing', we broadcast it to others
             socket.on('start_typing', function (data) {
                 var room = data.room;
-                socket.message = socket.userid+" is typing..";
+                socket.message = socket.username+" is typing..";
                 socket.broadcast.to(room).emit('start_typing', {
                     message: socket.message
                 });
@@ -567,7 +577,7 @@ module.exports = exports = function(app, socketCallback) {
             socket.on('clear', function(data){
                 // Remove all chats from collection
                 data = convert_object_id(data);
-                chat.updateMany({_id: { $in: data }}, {$push: { deleted_by: socket.userid }}, function(){
+                chat.updateMany({_id: { $in: data }}, {$push: { deleted_by: socket.username }}, function(){
                     // Emit cleared
                     socket.emit('cleared', data);
                 });

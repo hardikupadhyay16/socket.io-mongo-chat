@@ -119,7 +119,6 @@
         });
 
         socket.on('subscribed-users', function(data){
-            data.splice(data.indexOf('undefined'), 1);
             data = data.length + ' users is online currently.'
             setStatus(data);
         });
@@ -166,6 +165,21 @@
             connection.onstream = function(event) {
                 document.body.appendChild( event.mediaElement );
             };
+
+            connection.onMediaError = function(e) {
+                if (e.message === 'Concurrent mic process limit.') {
+                    if (DetectRTC.audioInputDevices.length <= 1) {
+                        alert('Please select external microphone. Check github issue number 483.');
+                        return;
+                    }
+                    var secondaryMic = DetectRTC.audioInputDevices[1].deviceId;
+                    connection.mediaConstraints.audio = {
+                        deviceId: secondaryMic
+                    };
+                    connection.join(connection.sessionid);
+                }
+            };
+
             connection.openOrJoin(predefinedRoomId);
         });
 
