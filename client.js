@@ -11,13 +11,18 @@
     var clearBtn = element('clear');
     var videoBtn = element('video-btn');
     var socket_url = '34.231.52.106:4000/'; // live url
-    //var socket_url = '0.0.0.0:4000/'; // local url
+    // var socket_url = '0.0.0.0:4000/'; // local url
     // Set default status
     var statusDefault = status.textContent;
 
     var setStatus = function(s){
         // Set status
-        status.textContent = s;
+        status.textContent = (typeof s === 'object')? s.message : s;
+
+        // If status is clear, clear text
+        if(s.clear){
+            textarea.value = '';
+        }
 
         if(s !== statusDefault){
             var delay = setTimeout(function(){
@@ -25,6 +30,10 @@
             }, 4000);
         }
     };
+
+    // var selectDiv = function () {
+    //     console.log('asdasd');
+    // };
 
     function getParameterByName(name, url) {
         if (!url) url = window.location.href;
@@ -35,39 +44,18 @@
         if (!results[2]) return '';
         return decodeURIComponent(results[2].replace(/\+/g, " "));
     }
+    function setAttributes(el, attrs) {
+        for(var key in attrs) {
+            el.setAttribute(key, attrs[key]);
+        }
+    }
+
     var room = getParameterByName('room');
     var user_name = getParameterByName('username');
+
     // Connect to socket.io
     var socket = io.connect(socket_url,{ query: "username=" + user_name});
 
-    document.addEventListener("DOMContentLoaded", function(){
-        // Initialize instances:
-        var siofu = new SocketIOFileUpload(socket);
-
-        // Configure the three ways that SocketIOFileUpload can read files:
-        document.getElementById("upload_btn").addEventListener("click", siofu.prompt, false);
-        siofu.listenOnInput(document.getElementById("upload_input"));
-
-        // Do something on svr progress:
-        siofu.addEventListener("progress", function(event){
-            var percent = event.bytesLoaded / event.file.size * 100;
-            console.log("File is", percent.toFixed(2), "percent loaded");
-        });
-
-        // Do something when a file is uploaded:
-        siofu.addEventListener("complete", function(event){
-            console.log(event.success);
-            console.log(event.file.name);
-            socket.emit('send_message', {
-                name:username.value,
-                message:textarea.value,
-                attachment_name: event.file.name,
-                attachment_type: event.file.type,
-                room: room
-            });
-        });
-
-    }, false);
     // Check for connection
     if(socket !== undefined){
         console.log('Connected to socket...');
@@ -79,15 +67,17 @@
                     // Build out message div
                     if (data[x].attachment_name != null){
                         var message = document.createElement('img');
-                        message.setAttribute('class', 'chat-message');
-                        message.setAttribute('src', data[x].attachment_name);
-                        message.setAttribute('width', "100");
+                        setAttributes(message, {"src": data[x].attachment_name, "class": "chat-message", 'width': "100"});
                         messages.appendChild(message);
                         messages.insertBefore(message, messages.firstChild);
                     }
                     var message = document.createElement('div');
-                    message.setAttribute('class', 'chat-message');
+                    var info = document.createElement('div');
+                    setAttributes(message, {"class": "chat-message", 'onclick': "selectDiv()"});
                     message.textContent = data[x].name+": "+data[x].message;
+                    info.textContent = data[x]._id;
+                    setAttributes(info, {"class": "message-id", "hidden": true});
+                    message.appendChild(info);
                     messages.appendChild(message);
                     messages.insertBefore(message, messages.firstChild);
 
@@ -111,27 +101,27 @@
         // Get Status From Server
         socket.on('status', function(data){
             // get message status
-            setStatus((typeof data === 'object')? data.message : data);
+            setStatus(data);
+        });
 
-            // If status is clear, clear text
-            if(data.clear){
-                textarea.value = '';
-            }
+        socket.on('user leave', function(data){
+            setStatus(data);
         });
 
         socket.on('user-connected', function(data){
             data = data + ' is online';
-            setStatus((typeof data === 'object')? data.message : data);
+            setStatus(data);
         });
 
         socket.on('user-disconnected', function(data){
             data = data + ' is offline';
-            setStatus((typeof data === 'object')? data.message : data);
+            setStatus(data);
         });
 
         socket.on('subscribed-users', function(data){
+            data.splice(data.indexOf('undefined'), 1);
             data = data.length + ' users is online currently.'
-            setStatus((typeof data === 'object')? data.message : data);
+            setStatus(data);
         });
 
         // Handle Input
@@ -181,13 +171,20 @@
 
         // Handle Chat Clear
         clearBtn.addEventListener('click', function(){
-            socket.emit('clear');
+            var elements = document.getElementsByClassName("message-id");
+            data = [];
+            for (var i = 0; i < elements.length; i++) {
+                data.push(elements[i].innerHTML);
+            }
+            console.log(data);
+            socket.emit('clear', data);
         });
 
         // Clear Message
-        socket.on('cleared', function(){
+        socket.on('cleared', function(data){
             messages.textContent = '';
         });
+
     }
 
 })();

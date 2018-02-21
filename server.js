@@ -28,6 +28,8 @@ var path = require('path');
 var options = {
     key: fs.readFileSync(path.join(__dirname, resolveURL('keys/privatekey.pem'))),
     cert: fs.readFileSync(path.join(__dirname, resolveURL('keys/certificate.pem')))
+    // key: fs.readFileSync('./file.pem'),
+    // cert: fs.readFileSync('./file.crt')
 };
 
 // force auto reboot on failures

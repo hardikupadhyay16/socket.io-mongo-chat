@@ -6,9 +6,7 @@ var shiftedModerationControls = {};
 // for scalable-broadcast demos
 var ScalableBroadcast;
 const mongo = require('mongodb').MongoClient;
-const SocketIOFileUpload = require('socketio-file-upload')
-var path = require('path');
-var fs = require('fs');
+var ObjectID = require('mongodb').ObjectID;
 
 module.exports = exports = function(app, socketCallback) {
     socketCallback = socketCallback || function() {};
@@ -86,7 +84,6 @@ module.exports = exports = function(app, socketCallback) {
             ScalableBroadcast(socket, params.maxRelayLimitPerUser);
         }
 
-        console.log(params.username, 'params');
         // temporarily disabled
         if (false && !!listOfUsers[params.userid]) {
             params.dontUpdateUserId = true;
@@ -100,7 +97,6 @@ module.exports = exports = function(app, socketCallback) {
         appendUser(socket);
 
         socket.broadcast.emit('user-connected', socket.userid);
-        console.log(Object.keys(listOfUsers));
         socket.emit('subscribed-users', Object.keys(listOfUsers));
 
         if (autoCloseEntireSession == 'false' && Object.keys(listOfUsers).length == 1) {
@@ -504,24 +500,11 @@ module.exports = exports = function(app, socketCallback) {
 
             console.log('MongoDB connected...');
             var chat = db.collection('chats');
-            var uploader = new SocketIOFileUpload();
-            uploader.dir = "svr/uploads";
-            uploader.listen(socket);
-
-            // Do something when a file is saved:
-            uploader.on("saved", function(event){
-                console.log(event.file);
-            });
-
-            // Error handler:
-            uploader.on("error", function(event){
-                console.log("Error from uploader", event);
-            });
 
             socket.on('join', function (data) {
                 socket.join(data.room); // We are using room of socket io
                 // Get chats from mongo collection
-                chat.find({room: data.room}).limit(100).sort({_id:1}).toArray(function(err, res){
+                chat.find({room: data.room, deleted_by: { $nin: [ socket.userid ] }}).sort({_id:1}).toArray(function(err, res){
                     if(err){
                         throw err;
                     }
@@ -529,32 +512,34 @@ module.exports = exports = function(app, socketCallback) {
                     socket.emit('get_messages', res);
                 });
             });
+
+            socket.on('leave', function(data) {
+                socket.leave(data.room);
+                io.in(data.room).emit('user leave', {message: socket.userid + 'left' + data.room, clear: true});
+            });
+
             // Create function to send status
             sendStatus = function(s){
                 socket.emit('status', s);
             };
-
-
 
             // Handle input events
             socket.on('send_message', function(data){
                 var name = socket.userid;
                 var message = data.message;
                 var room = data.room;
-                var attachment_name = path.join(__dirname, 'svr/uploads/'+ data.attachment_name);
+                var attachment_name = data.attachment_name;
                 var attachment_type = data.attachment_type;
                 // client[receiver] = socket;
                 // Check for name and message
-                if(name == '' || name == undefined || name == null){
+                if(name == '' || name == 'undefined' || name == 'null'){
                     // Send error status
                     sendStatus('Please pass a username on url');
                 } else {
                     // Insert message
                     chat.insertOne({name: name, message: message, room: room,
-                        created_at: new Date().getTime(), attachment_name: attachment_name, attachment_type: attachment_type}, function(){
-                        console.log(room, 'room');
-                        io.to(room).emit('get_messages', [{name: name, message: message, room: room,
-                            created_at: new Date().getTime()}]);
+                        created_at: new Date().getTime(), attachment_name: attachment_name, attachment_type: attachment_type}, function(error, response){
+                        io.to(room).emit('get_messages', response.ops);
                         // Send status object
                         sendStatus({
                             message: 'Message sent',
@@ -581,16 +566,22 @@ module.exports = exports = function(app, socketCallback) {
             // Handle clear
             socket.on('clear', function(data){
                 // Remove all chats from collection
-                chat.deleteMany({}, function(){
+                data = convert_object_id(data);
+                chat.updateMany({_id: { $in: data }}, {$push: { deleted_by: socket.userid }}, function(){
                     // Emit cleared
-                    socket.emit('cleared');
+                    socket.emit('cleared', data);
                 });
             });
             // });
         });
     }
 };
-
+function convert_object_id(data) {
+    for (var i = 0; i < data.length; i++) {
+        data[i] = new ObjectID(data[i])
+    }
+    return data;
+}
 var enableLogs = false;
 
 try {
