@@ -106,8 +106,8 @@ module.exports = exports = function(app, socketCallback) {
         socket.username = params.username;
         appendUser(socket);
 
-        socket.broadcast.emit('user-connected', socket.username);
-        socket.emit('subscribed-users', getOnlineUser(listOfUsers));
+        socket.broadcast.emit('user_connected', socket.username);
+        socket.emit('subscribed_users', getOnlineUser(listOfUsers));
 
         if (autoCloseEntireSession == 'false' && Object.keys(listOfUsers).length == 1) {
             socket.shiftModerationControlBeforeLeaving = true;
@@ -449,7 +449,7 @@ module.exports = exports = function(app, socketCallback) {
         });
 
         socket.on('disconnect', function() {
-            socket.broadcast.emit('user-disconnected', socket.username);
+            socket.broadcast.emit('user_disconnected', socket.username);
             try {
                 if (socket && socket.namespace && socket.namespace.sockets) {
                     delete socket.namespace.sockets[this.id];
@@ -496,7 +496,7 @@ module.exports = exports = function(app, socketCallback) {
             }
 
             delete listOfUsers[socket.userid];
-            socket.emit('subscribed-users', Object.keys(listOfUsers));
+            socket.emit('subscribed_users', getOnlineUser(listOfUsers));
         });
 
         if (socketCallback) {
@@ -514,18 +514,42 @@ module.exports = exports = function(app, socketCallback) {
             socket.on('join', function (data) {
                 socket.join(data.room); // We are using room of socket io
                 // Get chats from mongo collection
-                chat.find({room: data.room, deleted_by: { $nin: [ socket.username ] }}).sort({_id:1}).toArray(function(err, res){
+                chat.find({room: data.room, deleted_by: { $nin: [ socket.username ] }}).sort({_id:-1}).limit(50).toArray(function(err, res){
                     if(err){
                         throw err;
                     }
-                    // Emit the messages
-                    socket.emit('get_messages', res);
+                    chat.find({room: data.room, deleted_by: { $nin: [ socket.username ] }}).count(function(err, count) {
+                        // Emit the messages
+                        socket.emit('get_messages', {
+                            messages: res,
+                            current_page: 1,
+                            total_pages: Math.ceil(count / 50)
+                        });
+                    });
+
                 });
             });
 
+            socket.on('get_messages', function (data) {
+                var perPage = 50;
+                var page = data.page || 1;
+                chat.find({room: data.room, deleted_by: { $nin: [ socket.username ] }}).skip((perPage * page) - perPage).sort({_id: -1}).limit(50).toArray(function(err, res){
+                    if(err){
+                        throw err;
+                    }
+                    chat.find({room: data.room, deleted_by: { $nin: [ socket.username ] }}).count(function(err, count) {
+                        // Emit the messages
+                        socket.emit('get_messages', {
+                            messages: res,
+                            current_page: page,
+                            total_pages: Math.ceil(count / perPage)
+                        });
+                    });
+                });
+            });
             socket.on('leave', function(data) {
                 socket.leave(data.room);
-                io.in(data.room).emit('user leave', {message: socket.username + 'left' + data.room, clear: true});
+                io.in(data.room).emit('user_leave', {message: socket.username + 'left' + data.room, clear: true});
             });
 
             // Create function to send status
@@ -538,8 +562,9 @@ module.exports = exports = function(app, socketCallback) {
                 var name = socket.username;
                 var message = data.message;
                 var room = data.room;
-                var attachment_name = data.attachment_name;
+                var attachment_url = data.attachment_url;
                 var attachment_type = data.attachment_type;
+                var caption = data.caption;
                 // client[receiver] = socket;
                 // Check for name and message
                 if(name == '' || name == 'undefined' || name == 'null'){
@@ -548,8 +573,8 @@ module.exports = exports = function(app, socketCallback) {
                 } else {
                     // Insert message
                     chat.insertOne({name: name, message: message, room: room,
-                        created_at: new Date().getTime(), attachment_name: attachment_name, attachment_type: attachment_type}, function(error, response){
-                        io.to(room).emit('get_messages', response.ops);
+                        created_at: new Date().getTime(), attachment_url: attachment_url, attachment_type: attachment_type, caption: caption}, function(error, response){
+                        io.to(room).emit('get_messages', {messages: response.ops, current_page: 0, total_pages: 0});
                         // Send status object
                         sendStatus({
                             message: 'Message sent',

@@ -62,24 +62,26 @@
         socket.emit('join', {room: room});
         // Handle Output
         socket.on('get_messages', function(data){
-            if(data.length){
-                for(var x = 0;x < data.length;x++){
+            if(data.messages.length){
+                for(var x = 0;x < data.messages.length;x++){
                     // Build out message div
-                    if (data[x].attachment_name != null){
-                        var message = document.createElement('img');
-                        setAttributes(message, {"src": data[x].attachment_name, "class": "chat-message", 'width': "100"});
-                        messages.appendChild(message);
-                        messages.insertBefore(message, messages.firstChild);
-                    }
                     var message = document.createElement('div');
                     var info = document.createElement('div');
                     setAttributes(message, {"class": "chat-message", 'onclick': "selectDiv()"});
-                    message.textContent = data[x].name+": "+data[x].message;
-                    info.textContent = data[x]._id;
+                    message.textContent = data.messages[x].name+": "+data.messages[x].message;
+                    info.textContent = data.messages[x]._id;
                     setAttributes(info, {"class": "message-id", "hidden": true});
+                    if (data.messages[x].attachment_url != null){
+                        message = document.createElement('img');
+                        setAttributes(message, {"src": data.messages[x].attachment_url, "class": "chat-message", 'width': "100"});
+                    }
                     message.appendChild(info);
                     messages.appendChild(message);
-                    messages.insertBefore(message, messages.firstChild);
+                    if (data.current_page === 0){
+                        messages.insertBefore(message, messages.firstChild);
+                    }else{
+                        messages.insertBefore(message, messages.lastChild);
+                    }
 
                 }
             }
@@ -104,21 +106,21 @@
             setStatus(data);
         });
 
-        socket.on('user leave', function(data){
+        socket.on('user_leave', function(data){
             setStatus(data);
         });
 
-        socket.on('user-connected', function(data){
+        socket.on('user_connected', function(data){
             data = data + ' is online';
             setStatus(data);
         });
 
-        socket.on('user-disconnected', function(data){
+        socket.on('user_disconnected', function(data){
             data = data + ' is offline';
             setStatus(data);
         });
 
-        socket.on('subscribed-users', function(data){
+        socket.on('subscribed_users', function(data){
             data = data.length + ' users is online currently.'
             setStatus(data);
         });
