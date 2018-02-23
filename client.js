@@ -10,7 +10,7 @@
     var username = element('name');
     var clearBtn = element('clear');
     var videoBtn = element('video-btn');
-    var socket_url = '34.231.52.106:4000/'; // live url
+    var socket_url = 'https://34.231.52.106:4000/'; // live url
     // var socket_url = '0.0.0.0:4000/'; // local url
     // Set default status
     var statusDefault = status.textContent;
@@ -54,7 +54,7 @@
     var user_name = getParameterByName('username');
 
     // Connect to socket.io
-    var socket = io.connect(socket_url,{ query: "username=" + user_name});
+    var socket = io.connect(socket_url,{secure: true, rejectUnauthorized : false, query: "username=" + user_name});
 
     // Check for connection
     if(socket !== undefined){

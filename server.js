@@ -5,7 +5,7 @@ function resolveURL(url) {
 }
 
 // Please use HTTPs on non-localhost domains.
-var isUseHTTPs = false;
+var isUseHTTPs = true;
 
 // var port = 443;
 var port = process.env.PORT || 4000;
@@ -26,10 +26,10 @@ var path = require('path');
 
 // see how to use a valid certificate:
 var options = {
-    key: fs.readFileSync(path.join(__dirname, resolveURL('keys/privatekey.pem'))),
-    cert: fs.readFileSync(path.join(__dirname, resolveURL('keys/certificate.pem')))
-    // key: fs.readFileSync('./file.pem'),
-    // cert: fs.readFileSync('./file.crt')
+    //key: fs.readFileSync(path.join(__dirname, resolveURL('keys/privatekey.pem'))),
+    //cert: fs.readFileSync(path.join(__dirname, resolveURL('keys/certificate.pem')))
+     key: fs.readFileSync('/etc/ssl/private/nginx-selfsigned.key'),
+     cert: fs.readFileSync('/etc/ssl/certs/nginx-selfsigned.crt')
 };
 
 // force auto reboot on failures
