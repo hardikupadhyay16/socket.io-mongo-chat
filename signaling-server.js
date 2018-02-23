@@ -598,6 +598,13 @@ module.exports = exports = function(app, socketCallback) {
                 socket.broadcast.to(room).emit('stop_typing');
             });
 
+            socket.on('start_video_call', function (data) {
+                var room = data.room;
+                var message = socket.username+" is started video call.";
+                socket.broadcast.to(room).emit('join_video_call', {
+                    message: message
+                });
+            });
             // Handle clear
             socket.on('clear', function(data){
                 // Remove all chats from collection

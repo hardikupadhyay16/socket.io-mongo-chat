@@ -10,6 +10,7 @@
     var username = element('name');
     var clearBtn = element('clear');
     var videoBtn = element('video-btn');
+    var rejectCall = document.createElement('button');
     var socket_url = 'https://34.231.52.106:4000/'; // live url
     // var socket_url = '0.0.0.0:4000/'; // local url
     // Set default status
@@ -146,6 +147,7 @@
 
         // Handle Video Call
         videoBtn.addEventListener('click',function(){
+            socket.emit('start_video_call', {room: room});
             var connection = new RTCMultiConnection();
             div =  element('main');
             div.style.display = 'none';
@@ -183,6 +185,20 @@
             };
 
             connection.openOrJoin(predefinedRoomId);
+        });
+
+        socket.on('join_video_call', function (data) {
+            setStatus(data.message);
+            videoBtn.innerText = 'Join Call';
+            videoBtn.classList.add("animate");
+            var header = element('header');
+            rejectCall.className = "animate btn btn-danger";
+            rejectCall.innerText = 'Reject Call';
+            header.appendChild(rejectCall);
+        });
+
+        rejectCall.addEventListener('click',function(){
+            location.reload();
         });
 
         // Handle Chat Clear

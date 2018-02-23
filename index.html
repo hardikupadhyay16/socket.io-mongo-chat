@@ -16,21 +16,32 @@
          div.chat-message:hover {
              outline: 1px solid grey;
          }
+         .animate{
+             animation: shake 1.5s;
+             animation-iteration-count: infinite;
+         }
+
+         @keyframes shake {
+             40% { transform: translate(1px, -1px) rotate(1deg); }
+             50% { transform: translate(-1px, 2px) rotate(-1deg); }
+             60% { transform: translate(-3px, 1px) rotate(0deg); }
+             70% { transform: translate(3px, 1px) rotate(-1deg); }
+         }
     </style>
 </head>
 <body>
     <div id='main' class="container">
         <div class="row">
             <div class="col-md-6 offset-md-3 col-sm-12">
-                <h1 class="text-center">
+                <h1 id='header' class="text-center">
                     ZodiChat
                     <button id="clear" class="btn btn-danger">Clear</button>
                     <button id="video-btn" class="btn btn-success">Video Call</button>
                 </h1>
                 <div id="status"></div>
                 <div id="chat">
-                    <input type="text" id="name" class="form-control" placeholder="Enter name your name">
-                    <br>
+                    <!--<input type="text" id="name" class="form-control" placeholder="Enter name your name">-->
+                    <!--<br>-->
                     <div class="card">
                         <div id="messages" class="card-block" style="overflow: scroll">
 
