@@ -132,7 +132,7 @@
                 // Emit to server input
                 socket.emit('stop_typing',{room: room});
                 socket.emit('send_message', {
-                    name:username.value,
+                    name:user_name,
                     message:textarea.value,
                     room: room
                 });
