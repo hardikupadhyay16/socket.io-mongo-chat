@@ -7,7 +7,6 @@
     var status = element('status');
     var messages = element('messages');
     var textarea = element('textarea');
-    var username = element('name');
     var clearBtn = element('clear');
     var videoBtn = element('video-btn');
     var rejectCall = document.createElement('button');
@@ -140,7 +139,7 @@
             }
             else
             {
-                socket.emit('start_typing', {name:username.value, room: room});
+                socket.emit('start_typing', {name:user_name, room: room});
             }
         });
 
