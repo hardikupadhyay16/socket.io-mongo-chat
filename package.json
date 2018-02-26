@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^5.0.0",
     "mongodb": "^2.2.30",
     "socket.io": "^2.0.3",
     "socketio-file-upload": "^0.6.0"

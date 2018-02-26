@@ -1,3 +1,4 @@
+require('dotenv').config({path: __dirname + '/.env'});
 function resolveURL(url) {
     var isWin = !!process.platform.match(/^win/);
     if (!isWin) return url;
@@ -5,31 +6,17 @@ function resolveURL(url) {
 }
 
 // Please use HTTPs on non-localhost domains.
-var isUseHTTPs = true;
-
+var isUseHTTPs = process.env.IS_HTTPS;
 // var port = 443;
 var port = process.env.PORT || 4000;
-
-try {
-    process.argv.forEach(function(val, index, array) {
-        console.log(val);
-        if (!val) return;
-
-        if (val === '--ssl') {
-            isUseHTTPs = true;
-        }
-    });
-} catch (e) {}
 
 var fs = require('fs');
 var path = require('path');
 
 // see how to use a valid certificate:
 var options = {
-    //key: fs.readFileSync(path.join(__dirname, resolveURL('keys/privatekey.pem'))),
-    //cert: fs.readFileSync(path.join(__dirname, resolveURL('keys/certificate.pem')))
-     key: fs.readFileSync('/etc/ssl/private/nginx-selfsigned.key'),
-     cert: fs.readFileSync('/etc/ssl/certs/nginx-selfsigned.crt')
+     key: fs.readFileSync(process.env.KEY),
+     cert: fs.readFileSync(process.env.CERT)
 };
 
 // force auto reboot on failures
@@ -44,20 +31,6 @@ if (isUseHTTPs) {
     app = server.createServer(options, function(){});
 } else {
     app = server.createServer(function(){});
-}
-
-function cmd_exec(cmd, args, cb_stdout, cb_end) {
-    var spawn = require('child_process').spawn,
-        child = spawn(cmd, args),
-        me = this;
-    me.exit = 0;
-    me.stdout = "";
-    child.stdout.on('data', function(data) {
-        cb_stdout(me, data)
-    });
-    child.stdout.on('end', function() {
-        cb_end(me)
-    });
 }
 
 function runServer() {

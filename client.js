@@ -12,8 +12,7 @@
     var rejectCall = document.createElement('button');
     var socket_url = 'https://34.231.52.106:4000/'; // live url
     // var socket_url = '0.0.0.0:4000/'; // local url
-    // Set default status
-    var statusDefault = status.textContent;
+    var statusDefault = status.textContent;  // Set default status
 
     var setStatus = function(s){
         // Set status
@@ -31,10 +30,6 @@
         }
     };
 
-    // var selectDiv = function () {
-    //     console.log('asdasd');
-    // };
-
     function getParameterByName(name, url) {
         if (!url) url = window.location.href;
         name = name.replace(/[\[\]]/g, "\\$&");
@@ -44,6 +39,7 @@
         if (!results[2]) return '';
         return decodeURIComponent(results[2].replace(/\+/g, " "));
     }
+
     function setAttributes(el, attrs) {
         for(var key in attrs) {
             el.setAttribute(key, attrs[key]);
@@ -143,7 +139,6 @@
             }
         });
 
-
         // Handle Video Call
         videoBtn.addEventListener('click',function(){
             socket.emit('start_video_call', {room: room});
@@ -172,7 +167,7 @@
             connection.onMediaError = function(e) {
                 if (e.message === 'Concurrent mic process limit.') {
                     if (DetectRTC.audioInputDevices.length <= 1) {
-                        alert('Please select external microphone. Check github issue number 483.');
+                        alert('Please select external microphone.');
                         return;
                     }
                     var secondaryMic = DetectRTC.audioInputDevices[1].deviceId;
@@ -207,7 +202,6 @@
             for (var i = 0; i < elements.length; i++) {
                 data.push(elements[i].innerHTML);
             }
-            console.log(data);
             socket.emit('clear', data);
         });
 
@@ -217,5 +211,4 @@
         });
 
     }
-
 })();

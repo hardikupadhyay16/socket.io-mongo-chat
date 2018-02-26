@@ -139,14 +139,14 @@ module.exports = exports = function(app, socketCallback) {
             callback(listOfUsers[remoteUserId].extra);
         });
 
-        socket.on('become-a-public-moderator', function() {
-            try {
-                if (!listOfUsers[socket.userid]) return;
-                listOfUsers[socket.userid].isPublic = true;
-            } catch (e) {
-                pushLogs('become-a-public-moderator', e);
-            }
-        });
+        // socket.on('become-a-public-moderator', function() {
+        //     try {
+        //         if (!listOfUsers[socket.userid]) return;
+        //         listOfUsers[socket.userid].isPublic = true;
+        //     } catch (e) {
+        //         pushLogs('become-a-public-moderator', e);
+        //     }
+        // });
 
         var dontDuplicateListeners = {};
         socket.on('set-custom-socket-event-listener', function(customEvent) {
@@ -160,34 +160,34 @@ module.exports = exports = function(app, socketCallback) {
             });
         });
 
-        socket.on('dont-make-me-moderator', function() {
-            try {
-                if (!listOfUsers[socket.userid]) return;
-                listOfUsers[socket.userid].isPublic = false;
-            } catch (e) {
-                pushLogs('dont-make-me-moderator', e);
-            }
-        });
+        // socket.on('dont-make-me-moderator', function() {
+        //     try {
+        //         if (!listOfUsers[socket.userid]) return;
+        //         listOfUsers[socket.userid].isPublic = false;
+        //     } catch (e) {
+        //         pushLogs('dont-make-me-moderator', e);
+        //     }
+        // });
 
-        socket.on('get-public-moderators', function(userIdStartsWith, callback) {
-            try {
-                userIdStartsWith = userIdStartsWith || '';
-                var allPublicModerators = [];
-                for (var moderatorId in listOfUsers) {
-                    if (listOfUsers[moderatorId].isPublic && moderatorId.indexOf(userIdStartsWith) === 0 && moderatorId !== socket.userid) {
-                        var moderator = listOfUsers[moderatorId];
-                        allPublicModerators.push({
-                            userid: moderatorId,
-                            extra: moderator.extra
-                        });
-                    }
-                }
-
-                callback(allPublicModerators);
-            } catch (e) {
-                pushLogs('get-public-moderators', e);
-            }
-        });
+        // socket.on('get-public-moderators', function(userIdStartsWith, callback) {
+        //     try {
+        //         userIdStartsWith = userIdStartsWith || '';
+        //         var allPublicModerators = [];
+        //         for (var moderatorId in listOfUsers) {
+        //             if (listOfUsers[moderatorId].isPublic && moderatorId.indexOf(userIdStartsWith) === 0 && moderatorId !== socket.userid) {
+        //                 var moderator = listOfUsers[moderatorId];
+        //                 allPublicModerators.push({
+        //                     userid: moderatorId,
+        //                     extra: moderator.extra
+        //                 });
+        //             }
+        //         }
+        //
+        //         callback(allPublicModerators);
+        //     } catch (e) {
+        //         pushLogs('get-public-moderators', e);
+        //     }
+        // });
 
         socket.on('changed-uuid', function(newUserId, callback) {
             callback = callback || function() {};
@@ -219,15 +219,15 @@ module.exports = exports = function(app, socketCallback) {
             }
         });
 
-        socket.on('set-password', function(password) {
-            try {
-                if (listOfUsers[socket.userid]) {
-                    listOfUsers[socket.userid].password = password;
-                }
-            } catch (e) {
-                pushLogs('set-password', e);
-            }
-        });
+        // socket.on('set-password', function(password) {
+        //     try {
+        //         if (listOfUsers[socket.userid]) {
+        //             listOfUsers[socket.userid].password = password;
+        //         }
+        //     } catch (e) {
+        //         pushLogs('set-password', e);
+        //     }
+        // });
 
         socket.on('disconnect-with', function(remoteUserId, callback) {
             try {
@@ -503,7 +503,7 @@ module.exports = exports = function(app, socketCallback) {
             socketCallback(socket);
         }
 
-        mongo.connect('mongodb://0.0.0.0/mongochat', function(err, db){
+        mongo.connect(process.env.DB_URL+process.env.DB, function(err, db){
             if(err){
                 throw err;
             }
