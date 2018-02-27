@@ -6,18 +6,12 @@ function resolveURL(url) {
 }
 
 // Please use HTTPs on non-localhost domains.
-var isUseHTTPs = process.env.IS_HTTPS;
+var isUseHTTPs = (process.env.IS_HTTPS == 'true');
 // var port = 443;
 var port = process.env.PORT || 4000;
 
 var fs = require('fs');
 var path = require('path');
-
-// see how to use a valid certificate:
-var options = {
-     key: fs.readFileSync(process.env.KEY),
-     cert: fs.readFileSync(process.env.CERT)
-};
 
 // force auto reboot on failures
 var autoRebootServerOnFailure = false;
@@ -28,6 +22,11 @@ var app;
 
 
 if (isUseHTTPs) {
+    // see how to use a valid certificate:
+    var options = {
+        key: fs.readFileSync(process.env.KEY),
+        cert: fs.readFileSync(process.env.CERT)
+    };
     app = server.createServer(options, function(){});
 } else {
     app = server.createServer(function(){});

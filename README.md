@@ -10,10 +10,6 @@ Simple chat app that uses MongoDB and Socket.io
 npm install 
 ```
 
-## Run Server
-```bash
-npm start
-```
 ## Copy Environment Variable File
 ```bash
  cp .env.example .env
@@ -24,5 +20,13 @@ npm start
  Uncomment below line from `client.js` for local use    
  
  `var socket_url = '0.0.0.0:4000/';`
+ 
+## Run Server
+ ```bash
+ npm start
+ ```
 ## Run App
  Open index.html
+ and pass room and username as parameter
+
+ Ex. ?room=test&username=pokemon
