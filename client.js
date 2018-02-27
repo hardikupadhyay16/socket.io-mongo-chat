@@ -10,8 +10,7 @@
     var clearBtn = element('clear');
     var videoBtn = element('video-btn');
     var rejectCall = document.createElement('button');
-    var socket_url = 'https://34.231.52.106:4000/'; // live url
-    // var socket_url = '0.0.0.0:4000/'; // local url
+    var socket_url = '0.0.0.0:4000/'; // local url
     var statusDefault = status.textContent;  // Set default status
 
     var setStatus = function(s){
