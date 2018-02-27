@@ -25,3 +25,4 @@ npm install
  and pass room and username as parameter
 
  Ex. ?room=test&username=Ironman
+
